@@ -1,0 +1,72 @@
+---
+title: "NFL Stadium Attendance"
+output: html_notebook
+---
+
+```{r}
+standings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-04/standings.csv')
+
+standings
+```
+
+```{r}
+ggplot(
+  data = filter(standings, year == 2000)
+) + 
+  geom_point(
+    mapping = aes(x = team_name, y = wins, color = playoffs),
+    position = "jitter"
+  ) +
+  coord_flip() +
+  xlab("Team Name") +
+  ylab("Wins")
+```
+
+```{r}
+ggplot(
+  data = filter(standings, team_name == "Eagles")
+) +
+  geom_smooth(
+    se = FALSE,
+    mapping = aes(x = year, y = wins),
+    position = "jitter"
+  )
+```
+
+```{r}
+ggplot(data = filter(standings, team_name == "Eagles")) +
+  geom_bar(
+    stat = "identity",
+    mapping = aes(x = year, y = wins, fill = playoffs),
+  ) + 
+  scale_fill_manual(values=c("#A5ACAF","#004C54")) + 
+  ggtitle("Philadelphia Eagles Win Record")
+```
+
+```{r}
+eagles <- filter(standings, team_name == "Eagles")
+
+eagles
+```
+
+```{r}
+library(tidyr)
+years <- 2000:2019
+both <- eagles[, c(3, 4, 5)]
+both <- gather(both, game, total, wins:loss)
+
+ggplot(data = both) +
+  geom_bar(
+    stat = "identity",
+    mapping = aes(x = year, y = total, fill = game),
+    width = 0.5,
+    position = "dodge"
+  ) +
+  scale_fill_manual(values=c("#A5ACAF","#004C54")) + 
+  ggtitle("Philadelphia Eagles Game Record") +
+  scale_x_continuous("Year", labels = as.character(years), breaks = years) +
+  ylab("Number of Games") +
+  theme(axis.text.x = element_text(angle = 45, hjust=1, vjust = 1))
+```
+
+
