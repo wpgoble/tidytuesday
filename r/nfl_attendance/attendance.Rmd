@@ -68,5 +68,98 @@ ggplot(data = both) +
   ylab("Number of Games") +
   theme(axis.text.x = element_text(angle = 45, hjust=1, vjust = 1))
 ```
+```{r}
+bucs <- filter(standings, team == "Tampa Bay")
 
+bucs_total <- bucs[, c(3, 4, 5, 14, 15)]
+bucs_total <- gather(bucs_total, result, number, wins:loss)
+
+bucs_total
+```
+```{r}
+fifteen <- 0:15
+
+ggplot(data = bucs_total) +
+  geom_bar(
+    stat = "identity",
+    mapping = aes(x = year, y = number, fill = result),
+    width = 0.75,
+    position = "dodge"
+  ) +
+  scale_fill_manual(values=c("#B1BABF","#FF7900")) + 
+  ggtitle("Tampa Bay Buccaneers Game Record") +
+  scale_x_continuous("Year", labels = as.character(years), breaks = years) +
+  scale_y_continuous("Number of Games", labels = as.character(fifteen), breaks = fifteen) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1, vjust = 1))
+```
+
+```{r}
+bucs_post <- bucs[, c(3, 4, 14)]
+ggplot(data = bucs_post) + 
+  geom_point(
+    mapping = aes(x = year, y = wins, color = playoffs),
+    position = "jitter"
+  ) + 
+  scale_color_manual(values=c("#D50A0A","#0A0A08")) + 
+  scale_x_continuous("Year", labels = as.character(years), breaks = years) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1, vjust = 1))
+```
+
+```{r}
+bucs
+```
+
+```{r}
+ggplot(data = bucs) + 
+  geom_smooth(
+    se = FALSE,
+    mapping = aes(x = year, y = wins),
+    color = "#FF7900"
+  ) + 
+  scale_x_continuous("Year", labels = as.character(years), breaks = years)
+```
+
+```{r}
+jameis <- read.csv("jameis.csv")
+fifteenyear <- filter(jameis, Year == 2015)
+sixteenyear <- filter(jameis, Year == 2016)
+seventeenyear <- filter(jameis, Year == 2017)
+eightteenyear <- filter(jameis, Year == 2018)
+nineteenyear <- filter(jameis, Year == 2019)
+
+fifteen_loss <- sum(fifteenyear$Result == "L")
+fifteen_win <- sum(fifteenyear$Result == "W")
+
+sixteen_loss <- sum(sixteenyear$Result == "L")
+sixteen_win <- sum(sixteenyear$Result == "W")
+
+seventeen_loss <- sum(seventeenyear$Result == "L")
+seventeen_win <- sum(seventeenyear$Result == "W")
+
+eightteen_loss <- sum(eightteenyear$Result == "L")
+eightteen_win <- sum(eightteenyear$Result == "W")
+
+nineteen_loss <- sum(nineteenyear$Result == "L")
+nineteen_win <- sum(nineteenyear$Result == "W")
+
+winston <- data.frame(Year  = c(2015, 2015, 2016, 2016, 2017, 2017, 2018, 2018, 2019, 2019),
+                      Result = c("Win", "Loss","Win", "Loss","Win", "Loss","Win", "Loss","Win", "Loss"),
+                Record = c(fifteen_win, fifteen_loss, sixteen_win, sixteen_loss, seventeen_win, seventeen_loss, eightteen_win, eightteen_loss, nineteen_win, nineteen_loss)
+                  )
+tb_years <- 2015:2019
+twelve <- 0:12
+
+ggplot(data = winston) +
+  geom_bar(
+    stat = "identity",
+    mapping = aes(x = Year, y = Record, fill = Result),
+    width = 0.75,
+    position = "dodge"
+  ) +
+  scale_fill_manual(values=c("#D50A0A","#0A0A08")) + 
+  ggtitle("Jameis Winston Tampa Record") +
+  scale_x_continuous("Year", labels = as.character(tb_years), breaks = tb_years) +
+  scale_y_continuous("Number of Games", labels = as.character(twelve), breaks = twelve) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1, vjust = 1))
+```
 
