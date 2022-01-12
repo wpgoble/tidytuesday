@@ -1,0 +1,121 @@
+---
+title: "Beer Production"
+output: html_notebook
+---
+
+This is a R notebook for the TidyTuesday dataset on Beer Production. This notebook is following the work of David Robinson, as I gain expereince with R and working with Data Visualization. First, lets grab our datasets.
+```{r}
+library(tidyverse)
+theme_set(theme_light())
+brewing_materials <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-31/brewing_materials.csv')
+beer_taxed <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-31/beer_taxed.csv')
+brewer_size <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-31/brewer_size.csv')
+beer_states <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-31/beer_states.csv')
+```
+
+To start with, what ingredients are used in beer? This is all the data presented for one month
+```{r}
+brewing_materials %>%
+  filter(year == max(year), month == max(month)) %>%
+  ggplot(aes(type, month_current, fill = material_type)) +
+  geom_col() + 
+  coord_flip()
+```
+
+What about looking at just the materials used in one month?
+```{r}
+brewing_materials %>%
+  filter(year == max(year), month == max(month)) %>%
+  filter(!str_detect(material_type, "Total")) %>%
+  mutate(type = fct_reorder(type, month_current)) %>%
+  ggplot(aes(type, month_current, fill = material_type)) +
+  geom_col() +
+  coord_flip()
+```
+
+Now lets look at the usage over time. We will change the date to be the first of the month.
+```{r}
+library(lubridate)
+
+brewing_materials <- brewing_materials %>%
+  mutate(date = ymd(paste(year, month, 1)))
+
+brewing_materials %>%
+  filter(!str_detect(material_type, "Total")) %>%
+  ggplot(aes(date, month_current, fill = type)) + 
+  geom_col()
+```
+It looks like Rice and Rice products do not exist in the data after 2015, lets remove these datapoints.
+
+```{r}
+brewing_materials <- brewing_materials %>%
+  filter(year < 2016)
+
+brewing_materials %>%
+  filter(!str_detect(material_type, "Total")) %>%
+  mutate(type = fct_reorder(type, month_current, sum)) %>%
+  ggplot(aes(date, month_current, fill = type)) + 
+  geom_col() + 
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Time", 
+       y = "Pounds used in beer production",
+       fill = "Material")
+```
+
+Now lets only look at the total products used
+```{r}
+brewing_materials %>%
+  filter(str_detect(material_type, "Total.*products")) %>%
+  mutate(type = fct_reorder(type, month_current, sum)) %>%
+  ggplot(aes(date, month_current, fill = type)) + 
+  geom_col() + 
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Time", 
+       y = "Pounds used in beer production",
+       fill = "Material")
+```
+
+```{r}
+devtools::install_github("ramnathv/tidymetrics")
+library(tidymetrics)
+```
+
+```{r}
+brewing_materials %>%
+  filter(!str_detect(material_type, "Total")) %>%
+  cross_by_dimensions(material_type, type) %>%
+  distinct(material_type, type)
+
+
+brewing_materials %>%
+  rename(material = type) %>%
+  filter(!str_detect(material_type, "Total")) %>%
+  cross_by_dimensions(material_type, material) %>%
+  summarize(nb_pounds = sum(month_current)) %>%
+  View()
+```
+
+brewing_summarized allows us to see the total pattern of beer production by month.
+```{r}
+brewing_summarized <- brewing_materials %>%
+  rename(material = type) %>%
+  filter(!str_detect(material_type, "Total")) %>%
+  cross_by_dimensions(material_type, material) %>%
+  cross_by_periods(c("month", "quarter", "year")) %>%
+  summarize(nb_pounds = sum(month_current))
+
+brewing_summarized %>%
+  filter(material_type == "All", material == "All", period == "month") %>%
+  ggplot(aes(date, nb_pounds)) + 
+  geom_col()
+  
+```
+
+... or by quarter
+```{r}
+brewing_summarized %>%
+  filter(material_type == "All", material == "All", period == "quarter") %>%
+  ggplot(aes(date, nb_pounds)) +
+  geom_col()
+```
+
