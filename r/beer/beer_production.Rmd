@@ -273,10 +273,11 @@ Animated graph?
 library(gganimate)
 
 beer_states %>%
-  filter(state != "total", type == "On Premises") %>%
-  group_by(state) %>%
+  filter(state != "total") %>%
+  group_by(state, year) %>%
   mutate(percent = barrels / sum(barrels)) %>%
   ungroup() %>%
+  filter(type == "On Premises") %>%
   mutate(ID = str_to_lower(state.name[match(state, state.abb)])) %>%
   inner_join(states, by = "ID") %>%
   ggplot(aes(geometry = geom, fill = percent)) +
