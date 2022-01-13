@@ -140,4 +140,154 @@ brewing_summarized %>%
   geom_col()
 ```
 
+Lets now look at the number of barrels that come from larger breweries vs smaller breweries.First we will look at the total number of barrels produced.
+```{r}
+brewer_size %>%
+  ggplot(aes(year, total_barrels)) + 
+  geom_col()
+```
+
+```{r}
+brewer_size %>%
+  filter(brewer_size != "Total") %>%
+  ggplot(aes(year, total_barrels, fill = brewer_size)) + 
+  geom_col()
+```
+
+Now lets fix the ordering of the legend
+```{r}
+brewer_size %>%
+  filter(brewer_size != "Total", !is.na(total_barrels)) %>%
+  mutate(brewer_size = fct_lump(brewer_size, 5, w = total_barrels),
+         barrel_number = coalesce(parse_number(as.character(brewer_size)), 1),
+         brewer_size = fct_reorder(brewer_size, barrel_number)) %>%
+  ggplot(aes(year, total_barrels, fill = brewer_size)) + 
+  geom_col()
+```
+
+Let's display the brewing materials graph in a different way. In this graph we can look at the seasonal changes in beer production.
+```{r}
+brewing_materials %>%
+  filter(material_type == "Total Used") %>%
+  ggplot(aes(month, month_current, color = factor(year))) + 
+  geom_line() + 
+  expand_limits(y = 0)
+```
+Where is beer produced?
+```{r}
+beer_states %>%
+  count(type, sort = TRUE, wt = barrels)
+```
+
+Now let's make a map of beer production
+```{r}
+beer_states %>%
+  group_by(year) %>%
+  summarize(barrels = sum(barrels, na.rm = TRUE))
+  
+# Who consumes beer on premises?
+beer_states %>%
+  filter(type == "On Premises", year == max(year), state != "total") %>%
+  arrange(desc(barrels))
+```
+
+Let's look at this as a percentage of beer each state makes for on premise consumption.
+```{r}
+beer_states %>%
+  filter(year == max(year), state != "total") %>%
+  group_by(state) %>%
+  mutate(percent = barrels / sum(barrels)) %>%
+  filter(type == "On Premises") %>%
+  arrange(desc(percent))
+```
+What about for bottles and cans
+```{r}
+beer_states %>%
+  filter(year == max(year), state != "total") %>%
+  group_by(state) %>%
+  mutate(percent = barrels / sum(barrels)) %>%
+  filter(type == "Bottles and Cans") %>%
+  arrange(desc(percent))
+```
+Now lets see what percentage of beer produced is for kegs and barrels.
+```{r}
+beer_states %>%
+  filter(year == max(year), state != "total") %>%
+  group_by(state) %>%
+  mutate(percent = barrels / sum(barrels)) %>%
+  filter(type == "Kegs and Barrels") %>%
+  arrange(desc(percent))
+```
+```{r}
+state_percents_2019 <- beer_states %>%
+  filter(year == max(year), state != "total") %>%
+  group_by(state) %>%
+  mutate(percent = barrels / sum(barrels)) %>%
+  ungroup()
+
+state_percents_2019 %>%
+  filter(type == "On Premises") %>%
+  arrange(desc(percent))
+```
+```{r}
+library(maps)
+library(sf)
+
+states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+```
+
+```{r}
+state_percents_2019 %>%
+  filter(type == "On Premises") %>%
+  mutate(ID = str_to_lower(state.name[match(state, state.abb)])) %>%
+  inner_join(states, by = "ID") %>%
+  ggplot(aes(geometry = geom, fill = percent)) + 
+  geom_sf() + 
+  scale_fill_gradient2(low = "blue", high = "red", midpoint = .5,
+                       labels = scales::percent) +
+  ggthemes::theme_map() + 
+  labs(title = "Percentage of produced beer consumed on premise, in 2019",
+       fill = "% consumed on prem.")
+```
+
+```{r}
+states_joined <- state_percents_2019 %>%
+  mutate(ID = str_to_lower(state.name[match(state, state.abb)])) %>%
+  inner_join(states, by = "ID")
+
+states_joined %>%
+  ggplot(aes(geometry = geom, fill = percent)) + 
+  geom_sf() +
+  scale_fill_gradient2(low = "blue", high = "red", midpoint = 0.5,
+                       labels = scales::percent) + 
+  facet_wrap(~ type, nrow = 2) +
+  ggthemes::theme_map() + 
+  theme(legend.position = "bottom") + 
+  labs(title = "How each state consumed their beer in  2019", 
+       fill = "% consumed")
+  
+```
+
+Animated graph?
+```{r}
+library(gganimate)
+
+beer_states %>%
+  filter(state != "total", type == "On Premises") %>%
+  group_by(state) %>%
+  mutate(percent = barrels / sum(barrels)) %>%
+  ungroup() %>%
+  mutate(ID = str_to_lower(state.name[match(state, state.abb)])) %>%
+  inner_join(states, by = "ID") %>%
+  ggplot(aes(geometry = geom, fill = percent)) +
+  geom_sf() +
+  transition_manual(year) +
+  # facet_wrap(~ type, nrow = 2) +
+  scale_fill_gradient2(low = "blue", high = "red", midpoint = 0.5,
+                       labels = scales::percent) +
+  ggthemes::theme_map() +
+  theme(legend.position = "bottom") + 
+  labs(title = "How is beer consumed within each state",
+       fill = "% consumed") 
+```
 
