@@ -118,4 +118,26 @@ brewing_summarized %>%
   ggplot(aes(date, nb_pounds)) +
   geom_col()
 ```
+We are keeping the same filtering, but instead we are looking at a different cross section of this data. The below graph is looking at the useage of grain products and non-grain products, by year.
+```{r}
+brewing_summarized %>%
+  filter(material_type != "All", material == "All", period == "year") %>%
+  ggplot(aes(date, nb_pounds, fill = material_type)) +
+  geom_col()
+```
+If we wanted to look at the material instead,
+```{r}
+brewing_summarized %>%
+  filter(material_type == "All", material != "All", period == "year") %>%
+  ggplot(aes(date, nb_pounds, fill = material)) +
+  geom_col()
+```
+We can also filter this by quarter
+```{r}
+brewing_summarized %>%
+  filter(material_type == "All", material != "All", period == "quarter") %>%
+  ggplot(aes(date, nb_pounds, fill = material)) + 
+  geom_col()
+```
+
 
