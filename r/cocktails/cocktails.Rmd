@@ -1,0 +1,73 @@
+---
+title: "Cocktails"
+output: html_notebook
+---
+
+```{r}
+cocktails <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-26/cocktails.csv')
+boston_cocktails <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-26/boston_cocktails.csv')
+```
+
+```{r}
+library(tidyverse)
+library(scales)
+theme_set(theme_light())
+```
+
+```{r}
+# sort the cocktails by the number of ingredients
+boston_cocktails %>%
+  count(name, sort = TRUE)
+```
+```{r}
+# which is the most popular ingredient?
+boston_cocktails %>%
+  count(ingredient, sort = TRUE) %>%
+  head(20) %>%
+  mutate(ingredient = fct_reorder(ingredient, n)) %>%
+  ggplot(aes(n, ingredient)) + 
+  geom_col() + 
+  labs(title = "Most common ingredients",
+       x = "Appearence")
+```
+
+```{r}
+boston_cocktails %>%
+  distinct(name, category) %>%
+  count(category, sort=TRUE)
+```
+```{r}
+boston_cocktails %>%
+  count(category, ingredient, sort = TRUE) %>%
+  mutate(category = fct_lump(category, 4),
+         ingredient = fct_lump(ingredient, 20)) %>%
+  filter(ingredient != "Other") %>%
+  mutate(ingredient = fct_reorder(ingredient, n, sum)) %>%
+  ggplot(aes(n, ingredient, fill = category)) + 
+  geom_col() + 
+  labs(title = 'Most Popular Cocktails',
+       x = 'Number of Recepies', 
+       y = 'Ingredient',
+       fill = 'Category')
+```
+
+What percentage of drinks are made with certain ingredients?
+
+```{r}
+n_recepies <- n_distinct(boston_cocktails$name)
+
+boston_cocktails %>%
+  count(category, ingredient, sort = TRUE) %>%
+  mutate(category = fct_lump(category, 4),
+         ingredient = fct_lump(ingredient, 20)) %>%
+  filter(ingredient != "Other") %>%
+  mutate(ingredient = fct_reorder(ingredient, n, sum)) %>%
+  ggplot(aes(n / n_recepies, ingredient, fill = category)) + 
+  geom_col() + 
+  scale_x_continuous(labels = percent_format())
+  labs(title = 'Most Popular Cocktails',
+       x = 'Percent of All Recepies', 
+       y = 'Ingredient',
+       fill = 'Category')
+```
+
